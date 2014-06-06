@@ -1,5 +1,5 @@
 ## About
-```pst``` is a simple HTTP *P*roxy *S*tress *T*est utility.
+```pst``` is a simple HTTP Proxy Stress Test utility.
 
 ## Installing
 This project is written in the [Go](http://golang.org/) programming language and to build it you need to install Go compiler and set some enviroment variables. [Here is an instructions on how to do it](http://golang.org/doc/install). After you've done all requered steps run the following command in your shell:
