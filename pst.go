@@ -113,20 +113,37 @@ func addDigestAuthHeader(req *http.Request, userData *ProxyUserAuthData, digestD
 	s = req.Method + ":" + uri
 	ha2 := fmt.Sprintf("%x", md5.Sum([]byte(s)))
 
-	nc := fmt.Sprintf("%08x", digestData.nc)
-	digestData.nc++
-	s = ha1 + ":" + digestData.nonce + ":" + nc + ":" + digestData.cnonce + ":" + digestData.qop + ":" + ha2
-	response := fmt.Sprintf("%x", md5.Sum([]byte(s)))
+	var (
+		response string
+		header   string
+	)
 
-	header := fmt.Sprintf("Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", qop=%s, nc=%s, cnonce=\"%s\", response=\"%s\"",
-		userData.username,
-		digestData.realm,
-		digestData.nonce,
-		uri,
-		digestData.qop,
-		nc,
-		digestData.cnonce,
-		response)
+	if digestData.qop == "" {
+		s = ha1 + ":" + digestData.nonce + ":" + ha2
+		response = fmt.Sprintf("%x", md5.Sum([]byte(s)))
+		header = fmt.Sprintf("Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", response=\"%s\"",
+			userData.username,
+			digestData.realm,
+			digestData.nonce,
+			uri,
+			response)
+	} else if digestData.qop == "auth" || digestData.qop == "auth-int" {
+		nc := fmt.Sprintf("%08x", digestData.nc)
+		digestData.nc++
+		s = ha1 + ":" + digestData.nonce + ":" + nc + ":" + digestData.cnonce + ":" + digestData.qop + ":" + ha2
+		response = fmt.Sprintf("%x", md5.Sum([]byte(s)))
+		header = fmt.Sprintf("Digest username=\"%s\", realm=\"%s\", nonce=\"%s\", uri=\"%s\", qop=%s, nc=%s, cnonce=\"%s\", response=\"%s\"",
+			userData.username,
+			digestData.realm,
+			digestData.nonce,
+			uri,
+			digestData.qop,
+			nc,
+			digestData.cnonce,
+			response)
+	} else {
+		log.Fatalf("unexpected proxy's qop directive value: '%s'", digestData.qop)
+	}
 
 	req.Header.Add(proxyAuthorizationHeader, header)
 }
