@@ -26,7 +26,7 @@ const (
 	digestAuthType  int = iota
 )
 
-type Config struct {
+type config struct {
 	connections   int
 	urlsFile      string
 	proxy         string
@@ -37,12 +37,12 @@ type Config struct {
 	reqNumTotal   int
 }
 
-type ProxyUserAuthData struct {
+type proxyUserAuthData struct {
 	username string
 	password string
 }
 
-type DigestAuthData struct {
+type digestAuthData struct {
 	realm  string
 	qop    string
 	nonce  string
@@ -70,7 +70,7 @@ func makeRandomString(length int) string {
 	return string(b)
 }
 
-func getProxyUserAuthData(client *http.Client, req *http.Request) *ProxyUserAuthData {
+func getProxyUserAuthData(client *http.Client, req *http.Request) *proxyUserAuthData {
 	tr := client.Transport
 	info, _ := tr.(*http.Transport).Proxy(req)
 
@@ -81,12 +81,12 @@ func getProxyUserAuthData(client *http.Client, req *http.Request) *ProxyUserAuth
 	username := info.User.Username()
 	password, _ := info.User.Password()
 
-	data := &ProxyUserAuthData{username: username, password: password}
+	data := &proxyUserAuthData{username: username, password: password}
 
 	return data
 }
 
-func addBasicAuthHeader(req *http.Request, userData *ProxyUserAuthData) {
+func addBasicAuthHeader(req *http.Request, userData *proxyUserAuthData) {
 	if userData == nil {
 		return
 	}
@@ -97,7 +97,7 @@ func addBasicAuthHeader(req *http.Request, userData *ProxyUserAuthData) {
 	req.Header.Add(proxyAuthorizationHeader, header)
 }
 
-func addDigestAuthHeader(req *http.Request, userData *ProxyUserAuthData, digestData *DigestAuthData) {
+func addDigestAuthHeader(req *http.Request, userData *proxyUserAuthData, digestData *digestAuthData) {
 	if userData == nil || digestData == nil {
 		return
 	}
@@ -148,7 +148,7 @@ func addDigestAuthHeader(req *http.Request, userData *ProxyUserAuthData, digestD
 	req.Header.Add(proxyAuthorizationHeader, header)
 }
 
-func getDigestAuthData(h string) *DigestAuthData {
+func getDigestAuthData(h string) *digestAuthData {
 	m := make(map[string]string)
 
 	quotedStringsRegexp := regexp.MustCompile("\"(.*?)\"")
@@ -190,7 +190,7 @@ func getDigestAuthData(h string) *DigestAuthData {
 		m[kv[0]] = strings.Trim(kv[1], "\"")
 	}
 
-	data := DigestAuthData{nc: 1}
+	data := digestAuthData{nc: 1}
 
 	if v, ok := m["realm"]; ok {
 		data.realm = v
@@ -209,14 +209,14 @@ func getDigestAuthData(h string) *DigestAuthData {
 	return &data
 }
 
-func worker(cfg *Config, client *http.Client, ch chan string, wg *sync.WaitGroup) {
+func worker(cfg *config, client *http.Client, ch chan string, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var (
-		userAuthData           *ProxyUserAuthData
-		digestData             *DigestAuthData
+		userAuthData           *proxyUserAuthData
+		digestData             *digestAuthData
 		authType               int
-		singleUrlRequestsCount int
+		singleURLRequestsCount int
 		processedUrlsCount     int
 	)
 
@@ -257,10 +257,10 @@ func worker(cfg *Config, client *http.Client, ch chan string, wg *sync.WaitGroup
 			continue
 		}
 
-		singleUrlRequestsCount = 0
+		singleURLRequestsCount = 0
 
 		for {
-			if singleUrlRequestsCount >= 2 {
+			if singleURLRequestsCount >= 2 {
 				log.Fatalf("Failed to authenticate on proxy server")
 			}
 
@@ -288,7 +288,7 @@ func worker(cfg *Config, client *http.Client, ch chan string, wg *sync.WaitGroup
 				log.Printf("Error '%v' while reading body from '%s'", err, url)
 			}
 			resp.Body.Close()
-			singleUrlRequestsCount++
+			singleURLRequestsCount++
 
 			if resp.StatusCode != 407 {
 				break
@@ -323,7 +323,7 @@ func worker(cfg *Config, client *http.Client, ch chan string, wg *sync.WaitGroup
 	}
 }
 
-func urlSubmitter(cfg *Config, urlProcessChannel chan string, quitSignalChannel chan bool) {
+func urlSubmitter(cfg *config, urlProcessChannel chan string, quitSignalChannel chan bool) {
 	file, err := os.Open(cfg.urlsFile)
 	if err != nil {
 		log.Fatalf("Can't open file '%s': %v\n", cfg.urlsFile, err)
@@ -365,7 +365,7 @@ func urlSubmitter(cfg *Config, urlProcessChannel chan string, quitSignalChannel 
 	}
 }
 
-func initLogger(cfg *Config) {
+func initLogger(cfg *config) {
 	if cfg.logFile != "" {
 		fh, err := os.OpenFile(cfg.logFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 		if err != nil {
@@ -390,7 +390,7 @@ func customDial(network, addr string) (net.Conn, error) {
 	return conn, err
 }
 
-func checkCmdLineArgs(cfg *Config) {
+func checkCmdLineArgs(cfg *config) {
 	if (cfg.duration > 0 && (cfg.reqNumTotal > 0 || cfg.reqNumPerConn > 0)) ||
 		(cfg.reqNumTotal > 0 && cfg.reqNumPerConn > 0) {
 		log.Fatalln("ambiguous cmd. line parametes")
@@ -405,10 +405,10 @@ func checkCmdLineArgs(cfg *Config) {
 	}
 }
 
-func makeHttpClient(cfg *Config) *http.Client {
-	parsedProxyUrl, parseError := url.Parse(cfg.proxy)
+func makeHTTPClient(cfg *config) *http.Client {
+	parsedProxyURL, parseError := url.Parse(cfg.proxy)
 	proxyFunc := func(req *http.Request) (*url.URL, error) {
-		return parsedProxyUrl, parseError
+		return parsedProxyURL, parseError
 	}
 
 	transport := &http.Transport{Proxy: proxyFunc, Dial: customDial}
@@ -431,7 +431,7 @@ func main() {
 
 	flag.Parse()
 
-	cfg := &Config{
+	cfg := &config{
 		connections:   *connections,
 		urlsFile:      *urlsFile,
 		proxy:         *proxy,
@@ -453,7 +453,7 @@ func main() {
 
 	go urlSubmitter(cfg, urlProcessChannel, quitSignalChannel)
 
-	client := makeHttpClient(cfg)
+	client := makeHTTPClient(cfg)
 	for i := 0; i < cfg.connections; i++ {
 		go worker(cfg, client, urlProcessChannel, wg)
 	}
