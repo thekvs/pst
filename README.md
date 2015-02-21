@@ -2,6 +2,8 @@
 ```pst``` is a simple HTTP Proxy Stress Test utility.
 
 ## Installing
+[![Build Status](https://travis-ci.org/thekvs/pst.svg?branch=master)](https://travis-ci.org/thekvs/pst)
+
 This project is written in the [Go](http://golang.org/) programming language and to build it you need to install Go compiler and set some enviroment variables. [Here is an instructions on how to do it](http://golang.org/doc/install). After you've done all requered steps run the following command in your shell:
 ```
 $ go get github.com/thekvs/pst
