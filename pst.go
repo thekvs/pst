@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -60,6 +61,13 @@ const (
 	proxyAuthenticateHeader  = "Proxy-Authenticate"
 	userAgentHeader          = "User-Agent"
 )
+
+func closeResource(c io.Closer) {
+	err := c.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
 
 func makeRandomString(length int) string {
 	b := make([]byte, length)
@@ -287,7 +295,7 @@ func worker(cfg *config, client *http.Client, ch chan string, wg *sync.WaitGroup
 			if err != nil {
 				log.Printf("Error '%v' while reading body from '%s'", err, url)
 			}
-			resp.Body.Close()
+			closeResource(resp.Body)
 			singleURLRequestsCount++
 
 			if resp.StatusCode != 407 {
@@ -328,7 +336,7 @@ func urlSubmitter(cfg *config, urlProcessChannel chan string, quitSignalChannel 
 	if err != nil {
 		log.Fatalf("Can't open file '%s': %v\n", cfg.urlsFile, err)
 	}
-	defer file.Close()
+	defer closeResource(file)
 
 	var (
 		url                string
@@ -383,8 +391,15 @@ func customDial(network, addr string) (net.Conn, error) {
 
 	conn, err := net.DialTCP(network, nil, remoteAddr)
 	if err == nil {
-		conn.SetKeepAlive(true)
-		conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
+		err = conn.SetKeepAlive(true)
+		if err != nil {
+			return conn, err
+		}
+
+		err = conn.SetKeepAlivePeriod(tcpKeepAliveInterval)
+		if err != nil {
+			return conn, err
+		}
 	}
 
 	return conn, err
