@@ -191,7 +191,7 @@ func getDigestAuthData(h string) *digestAuthData {
 		s = e + 1
 	}
 
-	tokens = append(tokens, strings.Trim(h[s:len(h)], " "))
+	tokens = append(tokens, strings.Trim(h[s:], " "))
 
 	for _, token := range tokens {
 		kv := strings.SplitN(token, "=", 2)
