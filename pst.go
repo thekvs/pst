@@ -366,7 +366,7 @@ func urlSubmitter(cfg *config, urlProcessChannel chan string, quitSignalChannel 
 				}
 			}
 		}
-		_, err = file.Seek(0, os.SEEK_SET)
+		_, err = file.Seek(0, io.SeekStart)
 		if err != nil {
 			log.Fatalf("Seet() failed: %v\n", err)
 		}
