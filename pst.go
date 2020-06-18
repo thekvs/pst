@@ -51,10 +51,12 @@ type digestAuthData struct {
 	nc     uint64
 }
 
-const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-const defaultUserAgent = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)"
-const tcpKeepAliveInterval = 1 * time.Minute
-const maxRedirectsCount = 10
+const (
+	chars                = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	defaultUserAgent     = "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0)"
+	tcpKeepAliveInterval = 1 * time.Minute
+	maxRedirectsCount    = 10
+)
 
 const (
 	proxyAuthorizationHeader = "Proxy-Authorization"
@@ -375,7 +377,7 @@ func urlSubmitter(cfg *config, urlProcessChannel chan string, quitSignalChannel 
 
 func initLogger(cfg *config) {
 	if cfg.logFile != "" {
-		fh, err := os.OpenFile(cfg.logFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+		fh, err := os.OpenFile(cfg.logFile, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o600)
 		if err != nil {
 			log.Fatalf("couldn't open log file '%s'\n%v", cfg.logFile, err)
 		}
